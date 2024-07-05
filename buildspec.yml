@@ -16,9 +16,8 @@ phases:
   build:
     commands:
       - echo Installing dependencies..
-      - pip install -r cicd-simple-flask-app/requirements.txt
+      - pip install -r requirements.txt
       - echo building the docker image..
-      - cd cicd-simple-flask-app/
       - docker build -t cicd-demo-flask-ecr .
       #- docker build -t $REPO_URI:latest .
       - docker tag cicd-demo-flask-ecr:latest 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
@@ -51,7 +50,6 @@ artifacts:
       files:
         - imageDetail.json
   #  - '**/*'
-  base-directory: cicd-simple-flask-app/
 
 # Make sure, selecting deploy stage as ECS in codePipeline and change 'imageDetail' as 'imagedefinition' in 'buildspec.yml' file and enter the "imagedefinition.json" at 'Image definitions file - optional' area.
 # If you are using blue/green deployment in ECS choose 'ECS(blue/green)' as deploy stage in codePipeline, use imageDetail.json as a artifact.
