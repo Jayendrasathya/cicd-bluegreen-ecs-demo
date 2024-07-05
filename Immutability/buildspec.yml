@@ -11,6 +11,9 @@ phases:
       - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 121099973511.dkr.ecr.eu-west-2.amazonaws.com
       - echo Login successfull
       - REPO_URI=121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
+      - echo Pulling the existing latest image...
+      - docker pull $REPO_URI:latest || true
+
       #- IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
       #- pip install -r cicd-simple-flask-app/requirements.txt
   build:
@@ -18,6 +21,8 @@ phases:
       - echo Installing dependencies..
       - cd Deploy-in-ECS/
       - pip install -r requirements.txt
+      - echo build started on `date`
+      - if [ "$(docker images -q $REPO_URI:latest 2> /dev/null)" != "" ]; then docker tag $REPO_URI:latest $REPO_URI:$(date +%Y%m%d%H%M%S); fi
       - echo building the docker image..
       - docker build -t cicd-demo-flask-ecr .
       #- docker build -t $REPO_URI:latest .
