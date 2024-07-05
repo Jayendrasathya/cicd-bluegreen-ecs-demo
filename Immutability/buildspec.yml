@@ -1,8 +1,5 @@
-version: 0.2
 
-env:
-  variables:
-    REPO_URI: 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
+version: 0.2
 
 phases:
   install:
@@ -10,47 +7,47 @@ phases:
       python: 3.11
   pre_build:
     commands:
-      - echo Logging in to ECR...
+      - echo Logging in to ECR..
       - aws --version
-      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $REPO_URI
-      - echo Login successful
-      - echo Pulling the existing latest image...
-      - docker pull $REPO_URI:latest || true
+      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 121099973511.dkr.ecr.eu-west-2.amazonaws.com
+      - echo Login successfull
+      - REPO_URI=121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
+      
 
+      #- IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+      #- pip install -r cicd-simple-flask-app/requirements.txt
   build:
     commands:
-      - echo Installing dependencies...
+      - echo Installing dependencies..
       - cd Deploy-in-ECS/
       - pip install -r requirements.txt
-      - echo Build started on `date`
-      - TIMESTAMP=$(date +%Y%m%d%H%M%S)
-      - echo TIMESTAMP=$TIMESTAMP
-      - echo Tagging the old latest image...
-      - if [ "$(docker images -q $REPO_URI:latest 2> /dev/null)" != "" ]; then
-          docker tag $REPO_URI:latest $REPO_URI:$TIMESTAMP;
-        fi
-      - echo Building the new Docker image...
-      - docker build -t cicd-demo-flask-ecr:latest .
-      - docker tag cicd-demo-flask-ecr:latest $REPO_URI:latest
-
+      - echo build started on `date`
+      - IMAGE_TAG="$(date +%Y%m%d%H%M%S)"
+      - echo building docker image..
+      - docker build -t cicd-demo-flask-ecr:$IMAGE_TAG .
+      #- docker build -t $REPO_URI:latest .
+      - docker tag cicd-demo-flask-ecr:$IMAGE_TAG 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
+      #- docker push "jayendraklouder/cicd-flask-app:latest"
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the old latest image with timestamp tag...
-      - if [ "$(docker images -q $REPO_URI:$TIMESTAMP 2> /dev/null)" != "" ]; then
-          docker push $REPO_URI:$TIMESTAMP;
-        else
-          echo "No old image to push.";
-        fi
-      - echo Pushing the new latest image...
-      - docker push $REPO_URI:latest
-      - echo Writing image definitions file...
+      - echo build completed on `date`
+      - echo pushing the new image to the repo...
+      - docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      #- docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      - echo writing image definitions file..
+      #container name
       - DOCKER_CONTAINER_NAME=cicd
       - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPO_URI:latest > imagedefinition.json
       - echo $DOCKER_CONTAINER_NAME
-      - echo Printing imagedefinition.json...
+      - echo printing imagedefinition.json..
       - cat imagedefinition.json
-
+  
 artifacts:
   files: imagedefinition.json
   base-directory: Deploy-in-ECS/
+    
+  #  - '**/*'
+
+# Make sure, selecting deploy stage as ECS in codePipeline and change 'imageDetail' as 'imagedefinition' in 'buildspec.yml' file and enter the "imagedefinition.json" at 'Image definitions file - optional' area.
+# If you are using blue/green deployment in ECS choose 'ECS(blue/green)' as deploy stage in codePipeline, use imageDetail.json as a artifact.
