@@ -1,0 +1,47 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+  pre_build:
+    commands:
+      - echo Logging in to ECR..
+      - aws --version
+      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 121099973511.dkr.ecr.eu-west-2.amazonaws.com
+      - echo Login successfull
+      - REPO_URI=121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
+      #- IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+      #- pip install -r cicd-simple-flask-app/requirements.txt
+  build:
+    commands:
+      - echo Installing dependencies..
+      - cd Deploy-in-ECS/
+      - pip install -r requirements.txt
+      - echo building the docker image..
+      - docker build -t cicd-demo-flask-ecr .
+      #- docker build -t $REPO_URI:latest .
+      - docker tag cicd-demo-flask-ecr:latest 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
+      #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
+      #- docker push "jayendraklouder/cicd-flask-app:latest"
+  post_build:
+    commands:
+      - echo pushing to repo..
+      - docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
+      #- docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      - echo writing image definitions file..
+      #container name
+      - DOCKER_CONTAINER_NAME=cicd
+      - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPO_URI:latest > imagedefinition.json
+      - echo $DOCKER_CONTAINER_NAME
+      - echo printing imagedefinition.json..
+      - cat imagedefinition.json
+  
+artifacts:
+  files: imagedefinition.json
+  base-directory: Deploy-in-ECS/
+    
+  #  - '**/*'
+
+# Make sure, selecting deploy stage as ECS in codePipeline and change 'imageDetail' as 'imagedefinition' in 'buildspec.yml' file and enter the "imagedefinition.json" at 'Image definitions file - optional' area.
+# If you are using blue/green deployment in ECS choose 'ECS(blue/green)' as deploy stage in codePipeline, use imageDetail.json as a artifact.
