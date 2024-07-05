@@ -1,1 +1,57 @@
+version: 0.2
 
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+  pre_build:
+    commands:
+      - echo Logging in to ECR..
+      - aws --version
+      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 121099973511.dkr.ecr.eu-west-2.amazonaws.com
+      - echo Login successfull
+      - REPO_URI=121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
+      #- IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+      #- pip install -r cicd-simple-flask-app/requirements.txt
+  build:
+    commands:
+      - echo Installing dependencies..
+      - pip install -r cicd-simple-flask-app/requirements.txt
+      - echo building the docker image..
+      - cd cicd-simple-flask-app/
+      - docker build -t cicd-demo-flask-ecr .
+      #- docker build -t $REPO_URI:latest .
+      - docker tag cicd-demo-flask-ecr:latest 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
+      #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
+      #- docker push "jayendraklouder/cicd-flask-app:latest"
+  post_build:
+    commands:
+      - echo pushing to repo..
+      - docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
+      #- docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      - echo writing image definitions file..
+      #container name
+      - DOCKER_CONTAINER_NAME=cicd
+      - printf '{"ImageURI":"%s"}' $REPO_URI:latest > imageDetail.json
+      - echo $DOCKER_CONTAINER_NAME
+      - echo printing imageDetail.json..
+      - cat imageDetail.json
+  
+artifacts:
+  files: 
+    - 'image*.json'
+    - 'appspec.yml'
+    - 'taskdef.json'
+  secondary-artifacts:
+    DefinitionArtifact:
+      files:
+        - appspec.yml
+        - taskdef.json
+    ImageArtifact:
+      files:
+        - imageDetail.json
+  #  - '**/*'
+  base-directory: cicd-simple-flask-app/
+
+# Make sure, selecting deploy stage as ECS in codePipeline and change 'imageDetail' as 'imagedefinition' in 'buildspec.yml' file and enter the "imagedefinition.json" at 'Image definitions file - optional' area.
+# If you are using blue/green deployment in ECS choose 'ECS(blue/green)' as deploy stage in codePipeline, use imageDetail.json as a artifact.
