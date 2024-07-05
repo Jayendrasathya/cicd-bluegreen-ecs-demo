@@ -22,16 +22,20 @@ phases:
       - cd Deploy-in-ECS/
       - pip install -r requirements.txt
       - echo build started on `date`
+      - echo pulling the old latest tagged image..
       - if [ "$(docker images -q $REPO_URI:latest 2> /dev/null)" != "" ]; then docker tag $REPO_URI:latest $REPO_URI:$(date +%Y%m%d%H%M%S); fi
-      - echo building the docker image..
-      - docker build -t cicd-demo-flask-ecr .
+      - echo building the new docker image..
+      - docker build -t cicd-demo-flask-ecr:latest .
       #- docker build -t $REPO_URI:latest .
       - docker tag cicd-demo-flask-ecr:latest 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
       #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
       #- docker push "jayendraklouder/cicd-flask-app:latest"
   post_build:
     commands:
-      - echo pushing to repo..
+      - echo build completed on `date`
+      - if [ "$(docker images -q $REPO_URI:latest 2> /dev/null)" != "" ]; then docker push $REPO_URI:$(date +%Y%m%d%H%M%S); fi
+      - echo old image pushed to the repo with timestamp tag
+      - echo pushing the new latest image to the repo...
       - docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
       #- docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
       - echo writing image definitions file..
