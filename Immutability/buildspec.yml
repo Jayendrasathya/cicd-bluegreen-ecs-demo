@@ -9,9 +9,9 @@ phases:
     commands:
       - echo Logging in to ECR..
       - aws --version
-      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 121099973511.dkr.ecr.eu-west-2.amazonaws.com
+      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 549617961407.dkr.ecr.eu-west-2.amazonaws.com
       - echo Login successfull
-      - REPO_URI=121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
+      - REPO_URI=549617961407.dkr.ecr.eu-west-2.amazonaws.com/demo-cicd-immutability
       
 
       #- IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
@@ -24,16 +24,17 @@ phases:
       - echo build started on `date`
       - IMAGE_TAG="$(date +%Y%m%d%H%M%S)"
       - echo building docker image..
-      - docker build -t cicd-demo-flask-ecr:$IMAGE_TAG .
+      - docker build -t demo-cicd-immutability:$IMAGE_TAG .
       #- docker build -t $REPO_URI:latest .
-      - docker tag cicd-demo-flask-ecr:$IMAGE_TAG 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      - docker tag demo-cicd-immutability:$IMAGE_TAG 549617961407.dkr.ecr.eu-west-2.amazonaws.com/demo-cicd-immutability:latest
+      #- docker tag cicd-demo-flask-ecr:$IMAGE_TAG 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
       #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
       #- docker push "jayendraklouder/cicd-flask-app:latest"
   post_build:
     commands:
       - echo build completed on `date`
       - echo pushing the new image to the repo...
-      - docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      - docker push 549617961407.dkr.ecr.eu-west-2.amazonaws.com/demo-cicd-immutability:$IMAGE_TAG
       #- docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
       - echo writing image definitions file..
       #container name
