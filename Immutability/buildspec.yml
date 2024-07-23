@@ -26,7 +26,7 @@ phases:
       - echo building docker image..
       - docker build -t demo-cicd-immutability:$IMAGE_TAG .
       #- docker build -t $REPO_URI:latest .
-      - docker tag demo-cicd-immutability:$IMAGE_TAG 549617961407.dkr.ecr.eu-west-2.amazonaws.com/demo-cicd-immutability:latest
+      - docker tag demo-cicd-immutability:$IMAGE_TAG 549617961407.dkr.ecr.eu-west-2.amazonaws.com/demo-cicd-immutability:$IMAGE_TAG
       #- docker tag cicd-demo-flask-ecr:$IMAGE_TAG 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
       #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
       #- docker push "jayendraklouder/cicd-flask-app:latest"
