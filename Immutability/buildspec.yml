@@ -46,7 +46,7 @@ phases:
   
 artifacts:
   files: imagedefinition.json
-  base-directory: Deploy-in-ECS/
+  #base-directory: Deploy-in-ECS/
     
   #  - '**/*'
 
