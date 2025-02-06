@@ -8,31 +8,34 @@ phases:
     commands:
       - echo Logging in to ECR..
       - aws --version
-      - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 121099973511.dkr.ecr.eu-west-2.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - echo Login successfull
-      - REPO_URI=121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr
-      #- IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
-      #- pip install -r cicd-simple-flask-app/requirements.txt
+      - echo Fetching latest tag...
+      - LATEST_TAG=$(aws ecr describe-images --repository-name $REPO_NAME --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
+      - echo Latest tag: $LATEST_TAG
+      - |
+        if [[ "$LATEST_TAG" == "None" ]]; then
+          NEW_TAG='v1.0.1'
+        else
+          LAST_NUMBER=$(echo $LATEST_TAG | awk -F. '{print $3}')
+          NEW_LAST_NUMBER=$((LAST_NUMBER + 1))
+          NEW_TAG="v1.0.$NEW_LAST_NUMBER"
+        fi
+      - echo new tag: $NEW_TAG
   build:
     commands:
       - echo Installing dependencies..
       - cd Deploy-in-ECS/
       - pip install -r requirements.txt
       - echo building the docker image..
-      - docker build -t cicd-demo-flask-ecr .
-      #- docker build -t $REPO_URI:latest .
-      - docker tag cicd-demo-flask-ecr:latest 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
-      #- docker tag $REPO_URI:latest $REPO_URI:$IMAGE_TAG
-      #- docker push "jayendraklouder/cicd-flask-app:latest"
+      - docker build -t $REPO_NAME:$NEW_TAG .
+      - docker tag $REPO_NAME:$NEW_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO_NAME:$NEW_TAG
   post_build:
     commands:
-      - echo pushing to repo..
-      - docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:latest
-      #- docker push 121099973511.dkr.ecr.eu-west-2.amazonaws.com/cicd-demo-flask-ecr:$IMAGE_TAG
+      - echo pushing to the ECR repo..
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO_NAME:$NEW_TAG
       - echo writing image definitions file..
-      #container name
-      - DOCKER_CONTAINER_NAME=cicd
-      - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPO_URI:latest > imagedefinition.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO_NAME:$NEW_TAG > imagedefinition.json
       - echo $DOCKER_CONTAINER_NAME
       - echo printing imagedefinition.json..
       - cat imagedefinition.json
@@ -40,8 +43,11 @@ phases:
 artifacts:
   files: imagedefinition.json
   base-directory: Deploy-in-ECS/
-    
-  #  - '**/*'
 
-# Make sure, selecting deploy stage as ECS in codePipeline and change 'imageDetail' as 'imagedefinition' in 'buildspec.yml' file and enter the "imagedefinition.json" at 'Image definitions file - optional' area.
-# If you are using blue/green deployment in ECS choose 'ECS(blue/green)' as deploy stage in codePipeline, use imageDetail.json as a artifact.
+env:
+  variables:
+    AWS_REGION: eu-west-2
+    AWS_ACCOUNT_ID: 121099973511
+    REPO_NAME: demo-cicd
+    DOCKER_CONTAINER_NAME: cicd
+    
