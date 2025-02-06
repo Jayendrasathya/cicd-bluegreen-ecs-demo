@@ -13,14 +13,7 @@ phases:
       - echo Fetching latest tag...
       - LATEST_TAG=$(aws ecr describe-images --repository-name $REPO_NAME --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' --output text)
       - echo "Latest tag: $LATEST_TAG"
-      - |
-        if [[ "$LATEST_TAG" == "None" ]]; then
-          NEW_TAG='v1.0.1'
-        else
-          LAST_NUMBER=$(echo $LATEST_TAG | awk -F. '{print $3}')
-          NEW_LAST_NUMBER=$((LAST_NUMBER + 1))
-          NEW_TAG="v1.0.$NEW_LAST_NUMBER"
-        fi
+      - if [[ "$LATEST_TAG" == "None" ]]; then NEW_TAG='v1.0.1'; else LAST_NUMBER=$(echo $LATEST_TAG | awk -F. '{print $3}'); NEW_LAST_NUMBER=$((LAST_NUMBER + 1)); NEW_TAG="v1.0.$NEW_LAST_NUMBER"; fi
       - echo "new tag: $NEW_TAG"
   build:
     commands:
