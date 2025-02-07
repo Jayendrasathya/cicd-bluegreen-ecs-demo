@@ -13,7 +13,7 @@ app = Flask(__name__)
 @app.route("/")
 # ‘/’ URL is bound with hello_world() function.
 def hello_world():
-    return "Helloo World from ECS, we made it!!!"
+    return "Helloo World from ECS, we've made it!!!"
 
 
 # main driver function
